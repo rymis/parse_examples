@@ -27,18 +27,9 @@ import (
 
 // object <- '{' members? '}'
 type Object struct {
-	_        string     `literal:"{"`
-	Members *Members    `optional:"true"`
-	_        string     `literal:"}"`
-}
-
-// members <- pair (',' pair)*
-type Members struct {
-	FirstPair  Pair
-	Pairs    []struct {
-		_      string     `literal:","`
-		Pair   Pair
-	} `repeat:"*"`
+	_          string     `literal:"{"`
+	Members  []Pair `repeat:"*" delimiter:","`
+	_          string     `literal:"}"`
 }
 
 // pair <- string ':' value
@@ -50,18 +41,9 @@ type Pair struct {
 
 // array <- '[' elements? ']'
 type Array struct {
-	_         string      `literal:"["`
-	Elements *Elements    `optional:"true"`
-	_         string      `literal:"]"`
-}
-
-// elements <- value (',' value)*
-type Elements struct {
-	FirstValue  Value
-	Values    []struct {
-		_       string     `literal:","`
-		Value   Value
-	} `repeat:"*"`
+	_           string      `literal:"["`
+	Elements  []Value       `repeat:"*" delimiter:","`
+	_           string      `literal:"]"`
 }
 
 // value <- string / object / array / number / 'true' / 'false' / 'null'
@@ -96,12 +78,8 @@ type Number struct {
 func (self *Object) Map() map[string]interface{} {
 	res := make(map[string]interface{})
 
-	if self.Members != nil {
-		res[self.Members.FirstPair.Name.String] = self.Members.FirstPair.Value.Value()
-
-		for _, pair := range(self.Members.Pairs) {
-			res[pair.Pair.Name.String] = pair.Pair.Value.Value()
-		}
+	for _, pair := range(self.Members) {
+		res[pair.Name.String] = pair.Value.Value()
 	}
 
 	return res
@@ -143,12 +121,10 @@ func (self *Number) Number() float64 {
 
 func (self *Array) Array() []interface{} {
 	res := make([]interface{}, 0)
-	if self.Elements != nil {
-		res = append(res, self.Elements.FirstValue.Value())
-		for _, v := range(self.Elements.Values) {
-			res = append(res, v.Value.Value())
-		}
+	for _, v := range(self.Elements) {
+		res = append(res, v.Value())
 	}
+
 	return res
 }
 
@@ -184,7 +160,7 @@ func main() {
 	v, err := json.Marshal(res)
 	println(string(v))
 
-	if false { // code.json from Go distribution
+	if true { // code.json from Go distribution
 		data, err := ioutil.ReadFile("code.json")
 		if err != nil {
 			fmt.Printf("Error: %v", err)
