@@ -130,7 +130,7 @@ func (self *Array) Array() []interface{} {
 
 func ParseJSON(json []byte) (res map[string]interface{}, err error) {
 	var obj Object
-	_, err = parse.Parse(&obj, json, &parse.Params{ PackratEnabled: false, SkipWhite: parse.SkipSpaces })
+	_, err = parse.Parse(&obj, json, &parse.Options{ PackratEnabled: false, SkipWhite: parse.SkipSpaces })
 	if err != nil {
 		return
 	}
