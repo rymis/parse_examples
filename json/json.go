@@ -7,6 +7,9 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	"time"
+	"runtime/pprof"
+	"log"
+	"os"
 )
 
 /* Grammar based on images from json.org: */
@@ -69,9 +72,7 @@ type String struct {
 // frac <- '.' [0-9]+
 // exp  <- [eE] '+-'? [0-9]+
 type Number struct {
-	Int   string   `regexp:"-?([1-9][0-9]*|0)"`
-	Frac *string   `regexp:"\\.[0-9]+" optional:"true"`
-	Exp  *string   `regexp:"[eE][-+]?[0-9]+" optional:"true"`
+	Num   string   `regexp:"-?([1-9][0-9]*|0)(\\.[0-9]+)?([eE][-+]?[0-9]+)?"`
 }
 
 // Converters:
@@ -107,15 +108,7 @@ func (self *Value) Value() interface{} {
 }
 
 func (self *Number) Number() float64 {
-	s := self.Int
-	if self.Frac != nil {
-		s = s + *self.Frac
-	}
-	if self.Exp != nil {
-		s = s + *self.Exp
-	}
-
-	f, _ := strconv.ParseFloat(s, 64)
+	f, _ := strconv.ParseFloat(self.Num, 64)
 	return f
 }
 
@@ -167,8 +160,15 @@ func main() {
 			return
 		}
 
+		f, err := os.Create("json.prof")
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		tm := time.Now()
+		pprof.StartCPUProfile(f)
 		res, err = ParseJSON(data)
+		pprof.StopCPUProfile()
 		if err != nil {
 			fmt.Printf("Error: %v", err)
 			return
