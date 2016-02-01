@@ -222,16 +222,31 @@ You can define literal and regular expression in the same time. In this case reg
 literal for output. It is useful when you are parsing anonymous field and parser can't get the value.
 
 ### NotAny and FollowedBy parsers
-TODO
+If field has got tag `not_any="true"` parser will try to parse this field and will return error if it is parsed. If value is not
+parsed parser will continue to parse structure.
+
+If field has got tag `followed_by="true"` parser will try to parse this field and will return error if can't. After this parser
+will continue to parse structure from the same location.
+
+This attributes makes it possible to parse context-specific grammars in addition to context free grammars.
 
 ### Additional tags
 TODO
 
 ### Parse options
-TODO
+You can specify some options to parser. First you can define skip function: function for skipping white spaces. There are several
+functions present in library with names like SkipSpaces. This functions could be combined using SkipAll function.
+
+Parameter EnablePackrat allows you to enable or disable packrat parsing. By default this parameter is disabled but packrat
+table will be used for left recursion detection.
+
+Parameter Debug enables debug messages. It could be used to write call information for each parser call.
 
 ### Output functions
-TODO
+In addition to Parse function library contains Write and Append functions that allows you to serialize message. There are some
+additional restrictions to serialization: all the anonymous fields of structure must have type string and contain tag `literal`.
+This allows us to determine values of the anonymous fields and produce correct output. There are no guarantie that value written
+with Write method will be parsed with Parse, but it is possible to make it correct if you want to.
 
 ## Examples of usage
 This section contains several simple examples of usage in real applications.
