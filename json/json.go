@@ -181,8 +181,10 @@ func main() {
 		j2 := make(map[string]interface{})
 		tm = time.Now()
 		json.Unmarshal(data, &j2)
-		d = time.Since(tm)
-		println("Parsed in ", d.Nanoseconds(), " nanosecs")
+		d2 := time.Since(tm)
+		println("Parsed in ", d2.Nanoseconds(), " nanosecs")
+
+		println(float64(d.Nanoseconds()) / float64(d2.Nanoseconds()), " times faster")
 	}
 }
 
