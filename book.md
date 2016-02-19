@@ -598,8 +598,32 @@ func ParseJSON(json []byte) (res map[string]interface{}, err error) {
 ```
 and you'll have easy to use (but very very slow) JSON parser.
 
+Actually it is about 12 times slower then `encoding/json` module. It sounds bad but you must remember that it is
+not the fair play. Json parser in go standard library is handle written and optimized for JSON grammar but parse
+module is universal solution without special optimizations for this library. So I think that this is not so bad
+result.
+
 ### Configuration files parser
-TODO
+parse library gives you easy way to parse configuration files of any syntax you want. Let us parse configuration
+in very common form (for example this form of configuration has been using in nginx):
+```
+section0 {
+	string "string";
+	flag    true;
+	num     100;
+	id      section1;
+	innersection {
+		name "You can use internal sections :)";
+	}
+}
+section1 {
+	xxx -1;
+}
+```
+
+You can look inside conf directory to see the code. It is easy to understand code but it is also
+code that gives some problems for us. And must interesting problem is how to made the code that
+not only reads but also writes this kind of configuration files.
 
 ## Conclusion
 This is cool library :)

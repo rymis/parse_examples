@@ -1,5 +1,7 @@
 package main
 
+// This version of JSON parser uses Set tag to create map[string]interface{}
+
 import (
 	"github.com/rymis/parse"
 	"fmt"
@@ -32,8 +34,19 @@ import (
 // object <- '{' members? '}'
 type Object struct {
 	_          string     `literal:"{"`
-	Members  []Pair `repeat:"*" delimiter:","`
+	_        []Pair `repeat:"*" delimiter:"," set:"SetValues"`
 	_          string     `literal:"}"`
+	// It is private field so I don't need to specify any tags
+	values     map[string]interface{}
+}
+
+func (self *Object) SetValues(pairs []Pair) error {
+	self.values = make(map[string]interface{})
+	for _, p := range(pairs) {
+		// TODO: check if value is unique?
+		self.values[p.Name.String] = p.Value.Value()
+	}
+	return nil
 }
 
 // pair <- string ':' value
@@ -46,8 +59,18 @@ type Pair struct {
 // array <- '[' elements? ']'
 type Array struct {
 	_           string      `literal:"["`
-	Elements  []Value       `repeat:"*" delimiter:","`
+	_         []Value       `repeat:"*" delimiter:"," set:"SetValues"`
 	_           string      `literal:"]"`
+	values    []interface{}
+}
+
+func (self *Array) SetValues(vals []Value) error {
+	self.values = make([]interface{}, 0, len(vals))
+	for _, v := range(vals) {
+		self.values = append(self.values, v.Value())
+	}
+
+	return nil
 }
 
 // value <- string / object / array / number / 'true' / 'false' / 'null'
@@ -73,30 +96,26 @@ type String struct {
 // frac <- '.' [0-9]+
 // exp  <- [eE] '+-'? [0-9]+
 type Number struct {
-	Num   string   `regexp:"-?([1-9][0-9]*|0)(\\.[0-9]+)?([eE][-+]?[0-9]+)?"`
+	_     string   `regexp:"-?([1-9][0-9]*|0)(\\.[0-9]+)?([eE][-+]?[0-9]+)?" set:"SetValue"`
+	value float64
+}
+
+func (self *Number) SetValue(s string) error {
+	self.value, _ = strconv.ParseFloat(s, 64)
+	return nil
 }
 
 // Converters:
-func (self *Object) Map() map[string]interface{} {
-	res := make(map[string]interface{})
-
-	for _, pair := range(self.Members) {
-		res[pair.Name.String] = pair.Value.Value()
-	}
-
-	return res
-}
-
 func (self *Value) Value() interface{} {
 	switch self.Field {
 	case "String":
 		return self.String.String
 	case "Object":
-		return self.Object.Map()
+		return self.Object.values
 	case "Array":
-		return self.Array.Array()
+		return self.Array.values
 	case "Number":
-		return self.Number.Number()
+		return self.Number.value
 	case "True":
 		return true
 	case "False":
@@ -108,20 +127,6 @@ func (self *Value) Value() interface{} {
 	panic("Invalid Field in FirstOf")
 }
 
-func (self *Number) Number() float64 {
-	f, _ := strconv.ParseFloat(self.Num, 64)
-	return f
-}
-
-func (self *Array) Array() []interface{} {
-	res := make([]interface{}, 0)
-	for _, v := range(self.Elements) {
-		res = append(res, v.Value())
-	}
-
-	return res
-}
-
 func ParseJSON(json []byte) (res map[string]interface{}, err error) {
 	var obj Object
 	_, err = parse.Parse(&obj, json, &parse.Options{ PackratEnabled: false, SkipWhite: parse.SkipSpaces })
@@ -129,7 +134,7 @@ func ParseJSON(json []byte) (res map[string]interface{}, err error) {
 		return
 	}
 
-	return obj.Map(), nil
+	return obj.values, nil
 }
 
 var profile = flag.Bool("profile", false, "Enable profiling")
